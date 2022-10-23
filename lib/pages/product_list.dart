@@ -1,45 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_nodejs_crud/model/product_model.dart';
 import 'package:flutter_nodejs_crud/pages/product_item.dart';
+import 'package:flutter_nodejs_crud/services/api_service.dart';
 import 'package:snippet_coder_utils/ProgressHUD.dart';
 
-class ProductList extends StatefulWidget {
-  const ProductList({super.key});
+class ProductsList extends StatefulWidget {
+  const ProductsList({Key? key}) : super(key: key);
 
   @override
-  State<ProductList> createState() => _ProductListState();
+  _ProductsListState createState() => _ProductsListState();
 }
 
-class _ProductListState extends State<ProductList> {
-  List<ProductModel> products = List<ProductModel>.empty(growable: true);
-
+class _ProductsListState extends State<ProductsList> {
+  // List<ProductModel> products = List<ProductModel>.empty(growable: true);
   bool isApiCallProcess = false;
-
   @override
   void initState() {
     super.initState();
 
-    products.add(
-      ProductModel(
-        productId: "1",
-        productName: "Haldiram",
-        productImage:
-            "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=85,metadata=none,w=400,h=400/app/images/products/full_screen/pro_86973.jpg",
-        productDescription: "Haldiram Foods",
-        productPrice: 500,
-      ),
-    );
+    // products.add(
+    //   ProductModel(
+    //     id: "1",
+    //     productName: "Haldiram",
+    //     productImage:
+    //         "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=85,metadata=none,w=400,h=400/app/images/products/full_screen/pro_86973.jpg",
+    //     productDescription: "Haldiram Foods",
+    //     productPrice: 500,
+    //   ),
+    // );
 
-    products.add(
-      ProductModel(
-        productId: "1",
-        productName: "Haldiram",
-        productImage:
-            "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=85,metadata=none,w=400,h=400/app/images/products/full_screen/pro_86973.jpg",
-        productDescription: "Haldiram Foods",
-        productPrice: 500,
-      ),
-    );
+    // products.add(
+    //   ProductModel(
+    //     id: "1",
+    //     productName: "Haldiram",
+    //     productImage:
+    //         "https://cdn.grofers.com/cdn-cgi/image/f=auto,fit=scale-down,q=85,metadata=none,w=400,h=400/app/images/products/full_screen/pro_86973.jpg",
+    //     productDescription: "Haldiram Foods",
+    //     productPrice: 500,
+    //   ),
+    // );
   }
 
   @override
@@ -50,7 +49,30 @@ class _ProductListState extends State<ProductList> {
         elevation: 0,
       ),
       backgroundColor: Colors.grey[200],
-      body: productList(products),
+      body: ProgressHUD(
+        child: loadProducts(),
+        inAsyncCall: isApiCallProcess,
+        opacity: 0.3,
+        key: UniqueKey(),
+      ),
+    );
+  }
+
+  Widget loadProducts() {
+    return FutureBuilder(
+      future: APIService.getProducts(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<ProductModel>?> model,
+      ) {
+        if (model.hasData) {
+          return productList(model.data);
+        }
+
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
     );
   }
 
@@ -88,12 +110,25 @@ class _ProductListState extends State<ProductList> {
                 physics: const ClampingScrollPhysics(),
                 scrollDirection: Axis.vertical,
                 itemCount: products.length,
-                itemBuilder: (context, int index) {
+                itemBuilder: (context, index) {
                   return ProductItem(
-                      model: products[index],
-                      onDelete: (ProductModel model) {});
+                    model: products[index],
+                    onDelete: (ProductModel model) {
+                      setState(() {
+                        isApiCallProcess = true;
+                      });
+
+                      APIService.deleteProduct(model.productId).then(
+                        (response) {
+                          setState(() {
+                            isApiCallProcess = false;
+                          });
+                        },
+                      );
+                    },
+                  );
                 },
-              )
+              ),
             ],
           )
         ],

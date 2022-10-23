@@ -1,9 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter_nodejs_crud/config.dart';
 import 'package:flutter_nodejs_crud/model/product_model.dart';
 import 'package:http/http.dart' as http;
-
-import '../config.dart';
 
 class APIService {
   static var client = http.Client();

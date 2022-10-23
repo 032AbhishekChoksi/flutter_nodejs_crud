@@ -1,17 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_nodejs_crud/config.dart';
 import 'package:flutter_nodejs_crud/model/product_model.dart';
+import 'package:flutter_nodejs_crud/services/api_service.dart';
 import 'package:snippet_coder_utils/FormHelper.dart';
 import 'package:snippet_coder_utils/ProgressHUD.dart';
 import 'package:snippet_coder_utils/hex_color.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProductAddEdit extends StatefulWidget {
-  const ProductAddEdit({super.key});
+  const ProductAddEdit({Key? key}) : super(key: key);
 
   @override
-  State<ProductAddEdit> createState() => _ProductAddEditState();
+  _ProductAddEditState createState() => _ProductAddEditState();
 }
 
 class _ProductAddEditState extends State<ProductAddEdit> {
@@ -21,21 +23,6 @@ class _ProductAddEditState extends State<ProductAddEdit> {
   List<Object> images = [];
   bool isEditMode = false;
   bool isImageSelected = false;
-
-  @override
-  void initState() {
-    super.initState();
-    productModel = ProductModel();
-
-    Future.delayed(Duration.zero, () {
-      if (ModalRoute.of(context)?.settings.arguments != null) {
-        final Map arguments = ModalRoute.of(context)?.settings.arguments as Map;
-        productModel = arguments['model'];
-        isEditMode = true;
-        setState(() {});
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +44,21 @@ class _ProductAddEditState extends State<ProductAddEdit> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    productModel = ProductModel();
+
+    Future.delayed(Duration.zero, () {
+      if (ModalRoute.of(context)?.settings.arguments != null) {
+        final Map arguments = ModalRoute.of(context)?.settings.arguments as Map;
+        productModel = arguments['model'];
+        isEditMode = true;
+        setState(() {});
+      }
+    });
   }
 
   Widget productForm() {
@@ -134,6 +136,7 @@ class _ProductAddEditState extends State<ProductAddEdit> {
             (file) => {
               setState(
                 () {
+                  //model.productPic = file.path;
                   productModel!.productImage = file.path;
                   isImageSelected = true;
                 },
@@ -143,16 +146,46 @@ class _ProductAddEditState extends State<ProductAddEdit> {
           const SizedBox(
             height: 20,
           ),
-          const SizedBox(
-            height: 20,
-          ),
           Center(
             child: FormHelper.submitButton(
               "Save",
               () {
                 if (validateAndSave()) {
-                  // ignore: avoid_print
                   print(productModel!.toJson());
+
+                  setState(() {
+                    isApiCallProcess = true;
+                  });
+
+                  APIService.saveProduct(
+                    productModel!,
+                    isEditMode,
+                    isImageSelected,
+                  ).then(
+                    (response) {
+                      setState(() {
+                        isApiCallProcess = false;
+                      });
+
+                      if (response) {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/',
+                          (route) => false,
+                        );
+                      } else {
+                        FormHelper.showSimpleAlertDialog(
+                          context,
+                          Config.appName,
+                          "Error occur",
+                          "OK",
+                          () {
+                            Navigator.of(context).pop();
+                          },
+                        );
+                      }
+                    },
+                  );
                 }
               },
               btnColor: HexColor("283B71"),
@@ -246,5 +279,9 @@ class _ProductAddEditState extends State<ProductAddEdit> {
         ),
       ],
     );
+  }
+
+  isValidURL(url) {
+    return Uri.tryParse(url)?.hasAbsolutePath ?? false;
   }
 }
